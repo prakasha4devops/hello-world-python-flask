@@ -9,7 +9,6 @@ ARG USER_GID=$USER_UID
 ARG APP_HOME=/app
 
 ## Create a non-root group and user to run the application
-
 RUN addgroup -g $USER_GID $GROUP \
     && adduser -u  $USER_GID -S  -G $GROUP -h $APP_HOME $USERNAME
 
