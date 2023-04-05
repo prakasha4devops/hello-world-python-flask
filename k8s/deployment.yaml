@@ -1,13 +1,7 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: python-app
----
-apiVersion: v1
 kind: Service
 metadata:
   name: hello-python-service
-  namespace: python-app
 spec:
   selector:
     app: hello-python
@@ -22,7 +16,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-python
-  namespace: python-app
 spec:
   selector:
     matchLabels:
