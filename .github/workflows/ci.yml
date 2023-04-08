@@ -4,7 +4,7 @@ env:
   CONFIG_REPO_NAME: hello-python-flask
   HELM_REPO_NAME: helm-flask-app
   TEST_TAG: test${{ github.sha }}
-  LATEST_TAG: {{ github.sha }}
+  LATEST_TAG: ${{ github.sha }}
   IMAGE_NAME: hello-python-flask
 
 on:
