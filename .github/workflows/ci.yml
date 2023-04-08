@@ -1,0 +1,131 @@
+name: ci
+
+env:
+  CONFIG_REPO_NAME: hello-python-flask
+
+on:
+  push:
+    branches:
+      - 'develop'
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "building and testing the app ..."
+  docker-build-push:
+    runs-on: ubuntu-latest
+    needs: build-test
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/$CONFIG_REPO_NAME:${{ github.sha }}
+#  promote-to-dev-environment:
+#    runs-on: ubuntu-latest
+#    needs: docker-build-push
+#    steps:
+#      - run: |
+#          echo "=== promoting into dev environment! ==="
+#          git config --global user.email ci-bot@argocd.com && git config --global user.name ci-bot
+#          echo "=== cloning config repo $CONFIG_REPO_NAME ==="
+#          git clone https://oauth2:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/$CONFIG_REPO_NAME.git
+#          cd $CONFIG_REPO_NAME
+#          echo "=== checkout main branch === "
+#          git checkout main
+#          ls -lrt
+#          pwd
+#          echo "=== updating image tag in values file ===="
+#          sed -i "s,tag:.*,tag:\ ${{ github.sha }}," helm/webapp/values.yaml
+#          echo "=== git add and commit update image tag ===="
+#          git add . && git commit -m "update image tag"
+#          echo "=== git push code ===="
+#          git push
+#          echo "=== git push completed ===="
+
+##name: CI with GitOps
+##
+##on:
+##  workflow_dispatch:
+##  push:
+##    branches:
+##      - 'feature/*'
+##      - '!master'
+##      - '!main'
+##
+##env:
+##  IMAGE_NAME: "gitops-argocd"
+##  CONFIG_REPO_NAME: "gudiaolabs-charts"
+##
+##
+##jobs:
+##  build:
+##    name: Build and Pushing the Image
+##    runs-on: ubuntu-latest
+##    outputs:
+##      TAG_VERSION: ${{ steps.set-tag.outputs.tag-output }}
+##    steps:
+##      - uses: actions/checkout@v3
+##
+##      - name: Login to the Registry
+##        uses: docker/login-action@v1
+##        with:
+##          username: ${{ secrets.DOCKER_USER }}
+##          password: ${{ secrets.DOCKER_PASSWORD }}
+##
+##      - name: Set the tag
+##        id: set-tag
+##        run: |
+##          git_hash=$(git rev-parse --short ${{ github.sha }})
+##          echo "TAG=$git_hash" >> $GITHUB_ENV
+##          echo "tag-output=$git_hash" >> $GITHUB_OUTPUT
+##
+##      - name: Build and Push the Image
+##        run: |
+##          docker build -t ${{ secrets.DOCKER_USER }}/$IMAGE_NAME:${{ env.TAG }} .
+##          docker push ${{ secrets.DOCKER_USER }}/$IMAGE_NAME:${{ env.TAG }}
+##
+##  deploy:
+##    name: Deploy
+##    runs-on: ubuntu-latest
+##    needs: build
+##    steps:
+##        - run: |
+##            echo "promoting into dev environment!"
+##            git config --global user.email ci-bot@argocd.com && git config --global user.name ci-bot
+##
+##            echo "cloning config repo $CONFIG_REPO_NAME"
+##            git clone https://oauth2:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/$CONFIG_REPO_NAME.git
+##
+##            cd ./$CONFIG_REPO_NAME
+##
+##            echo "checkout main branch"
+##            git checkout main
+##
+##            echo "updating image tag in values file"
+##            git_hash="838672f"
+##            tag=$(cat ./${{ env.IMAGE_NAME }}/values.yaml | grep tag: | awk '{print $2}')
+##            sed -i "s/$tag/$git_hash/" ./${{ env.IMAGE_NAME }}/values.yaml
+##
+##            git add . && git commit -m "update image tag"
+##
+##            git push
