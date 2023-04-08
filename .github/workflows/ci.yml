@@ -71,7 +71,7 @@ jobs:
           ls -lrt
           pwd
           echo "=== updating image tag in values file ===="
-          sed -i "s,tag:.*,tag:\ ${{ env.LATEST_TAG }},"./values.yaml
+          sed -i "s,tag:.*,tag:\ ${{ github.sha }}," ./values.yaml
           echo "=== git add and commit update image tag ===="
           git add . && git commit -m "update image tag"
           echo "=== git push code ===="
