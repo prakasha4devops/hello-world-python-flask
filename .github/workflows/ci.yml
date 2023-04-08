@@ -2,6 +2,8 @@ name: ci
 
 env:
   CONFIG_REPO_NAME: hello-python-flask
+  TEST_TAG: ${{ github.sha }}
+  LATEST_TAG: test${{ github.sha }}
 
 on:
   push:
@@ -33,13 +35,24 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
+        name: Build and export to Docker
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          load: true
+          tags: ${{ env.TEST_TAG }}
+      -
+        name: Test
+        run: |
+          docker run --rm ${{ env.TEST_TAG }}
+      -
         name: Build and push
         uses: docker/build-push-action@v4
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.CONFIG_REPO_NAME}}:${{ github.sha }}
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.CONFIG_REPO_NAME}}:${{ env.LATEST_TAG }}
 #  promote-to-dev-environment:
 #    runs-on: ubuntu-latest
 #    needs: docker-build-push
