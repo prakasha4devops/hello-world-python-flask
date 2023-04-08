@@ -2,8 +2,10 @@ name: ci
 
 env:
   CONFIG_REPO_NAME: hello-python-flask
-  TEST_TAG: ${{ github.sha }}
-  LATEST_TAG: test${{ github.sha }}
+  HELM_REPO_NAME: helm-flask-app
+  TEST_TAG: test${{ github.sha }}
+  LATEST_TAG: {{ github.sha }}
+  IMAGE_NAME: hello-python-flask
 
 on:
   push:
@@ -52,28 +54,29 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.CONFIG_REPO_NAME}}:${{ env.LATEST_TAG }}
-#  promote-to-dev-environment:
-#    runs-on: ubuntu-latest
-#    needs: docker-build-push
-#    steps:
-#      - run: |
-#          echo "=== promoting into dev environment! ==="
-#          git config --global user.email ci-bot@argocd.com && git config --global user.name ci-bot
-#          echo "=== cloning config repo $CONFIG_REPO_NAME ==="
-#          git clone https://oauth2:${{ secrets.GH_PAT }}@github.com/${{ github.repository_owner }}/$CONFIG_REPO_NAME.git
-#          cd $CONFIG_REPO_NAME
-#          echo "=== checkout main branch === "
-#          git checkout main
-#          ls -lrt
-#          pwd
-#          echo "=== updating image tag in values file ===="
-#          sed -i "s,tag:.*,tag:\ ${{ github.sha }}," helm/webapp/values.yaml
-#          echo "=== git add and commit update image tag ===="
-#          git add . && git commit -m "update image tag"
-#          echo "=== git push code ===="
-#          git push
-#          echo "=== git push completed ===="
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{env.IMAGE_NAME}}:${{ env.LATEST_TAG }}
+
+  promote-to-dev-environment:
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    steps:
+      - run: |
+          echo "=== promoting into dev environment! ==="
+          git config --global user.email ci-bot@argocd.com && git config --global user.name ci-bot
+          echo "=== cloning config repo $HELM_REPO_NAME ==="
+          git clone https://oauth2:${{ secrets.PERSONAL_ACCESS_TOKENS }}@github.com/${{ github.repository_owner }}/${{ env.HELM_REPO_NAME }}.git
+          cd ${{ env.HELM_REPO_NAME }}
+          echo "=== checkout main branch === "
+          git checkout main
+          ls -lrt
+          pwd
+          echo "=== updating image tag in values file ===="
+          sed -i "s,tag:.*,tag:\ ${{ env.LATEST_TAG }},"./values.yaml
+          echo "=== git add and commit update image tag ===="
+          git add . && git commit -m "update image tag"
+          echo "=== git push code ===="
+          git push
+          echo "=== git push completed ===="
 
 ##name: CI with GitOps
 ##
